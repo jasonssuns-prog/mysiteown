@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的服务台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="mode-preview" data-theme="neon">
+
+<!-- 氛围背景：粒子画布 + 光斑 + 网格 + 暗角 -->
+<div class="bg" aria-hidden="true">
+  <canvas id="fx"></canvas>
+  <i class="b1"></i><i class="b2"></i><i class="b3"></i>
+  <div class="bg-grid"></div>
+</div>
+<!-- 鼠标跟随光球 -->
+<div id="cursor-glow" aria-hidden="true"></div>
+
+<div class="layout">
+
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo">🗂️</span>
+      <span class="brand-txt">我的服务台<i>SERVICE HUB</i></span>
+    </div>
+
+    <nav class="nav">
+      <a href="#sec-top" class="nav-item on"><i>🏠</i>总览</a>
+      <a href="#sec-checkin" class="nav-item"><i>⚡</i>今日签到</a>
+      <a href="#sec-services" class="nav-item"><i>🗂️</i>服务台账</a>
+      <a href="#sec-data" class="nav-item"><i>🏆</i>数据中心</a>
+    </nav>
+
+    <div class="side-foot">
+      <div class="theme-dots" title="切换主题">
+        <button class="theme-dot d-neon on" data-theme="neon" title="霓虹紫"></button>
+        <button class="theme-dot d-ocean" data-theme="ocean" title="深海蓝"></button>
+        <button class="theme-dot d-emerald" data-theme="emerald" title="翡翠绿"></button>
+      </div>
+      <div class="user-card">
+        <div class="avatar" id="avatar">·</div>
+        <div class="user-meta">
+          <div id="level-pill" class="level-pill" title=""></div>
+          <div class="xp-bar" title="升级进度"><i id="xp-bar-in"></i></div>
+        </div>
+      </div>
+      <button id="btn-add" class="btn primary block live-only">➕ 添加服务</button>
+      <div class="side-btns">
+        <button id="btn-export" class="btn ghost small live-only" title="导出台账 Markdown 到项目目录">📄 导出</button>
+        <button id="btn-backup" class="btn ghost small live-only" title="下载完整数据备份（data.json）">💾 备份</button>
+        <button id="btn-pass" class="btn ghost small live-only">🔑 改密码</button>
+        <button id="btn-logout" class="btn ghost small live-only">🚪 退出</button>
+        <button id="btn-login" class="btn primary small preview-only">🔓 登录</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="main" id="sec-top">
+
+    <!-- 每日欢迎区 -->
+    <section class="hero">
+      <div class="hero-main">
+        <span class="site-pill preview-only"><i></i>持续更新</span>
+        <span class="site-pill live-only" id="streak-pill"><i></i><span id="streak-pill-text">全勤连签中</span></span>
+        <h1 class="big-title">每天都在白嫖的路上</h1>
+        <p id="sub-line" class="sub-line"></p>
+        <div class="fortune-row">
+          <span id="fortune-pill" class="fortune"></span>
+          <span id="yi-line" class="yi-ji"></span>
+          <span id="ji-line" class="yi-ji bad"></span>
+        </div>
+        <div id="quote-line" class="quote"></div>
+      </div>
+      <div class="hero-side">
+        <svg viewBox="0 0 120 120" class="ring">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#d946ef"/>
+              <stop offset="1" stop-color="#22d3ee"/>
+            </linearGradient>
+            <linearGradient id="ringGradFull" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#34d399"/>
+              <stop offset="1" stop-color="#22d3ee"/>
+            </linearGradient>
+          </defs>
+          <circle cx="60" cy="60" r="52" class="ring-bg"/>
+          <circle id="ring-fg" cx="60" cy="60" r="52" class="ring-fg"/>
+          <text id="ring-text" x="60" y="57" text-anchor="middle" class="ring-num">0/0</text>
+          <text x="60" y="76" text-anchor="middle" class="ring-label">今日签到</text>
+        </svg>
+        <button id="btn-check-all" class="btn primary live-only">⚡ 一键全签</button>
+        <button id="btn-hero-login" class="btn primary preview-only">登录 · 开始攒热情值</button>
+      </div>
+    </section>
+
+    <div id="sec-banner" class="sec-banner hidden"></div>
+    <div id="expiry-banner" class="hidden"></div>
+
+    <section class="stats-strip">
+      <div class="stat"><span class="s-num" id="ss-streak">0</span><span class="s-sub">🔥 最长连签(天)</span></div>
+      <div class="stat"><span class="s-num" id="ss-total">0</span><span class="s-sub">✅ 累计签到(次)</span></div>
+      <div class="stat"><span class="s-num" id="ss-services">0</span><span class="s-sub">🗂️ 在册服务(个)</span></div>
+      <div class="stat"><span class="s-num" id="ss-xp">0</span><span class="s-sub">⚡ 热情值</span></div>
+    </section>
+
+    <section class="panel" id="sec-checkin">
+      <div class="panel-head">
+        <h2>⚡ 今日签到</h2>
+        <span id="checkin-progress" class="muted"></span>
+      </div>
+      <div class="bar"><div id="checkin-bar" class="bar-in"></div></div>
+      <div id="checkin-list"></div>
+    </section>
+
+    <div id="sec-services">
+      <div id="chips" class="chips"></div>
+      <div class="toolbar">
+        <input id="search" placeholder="🔍 搜名称 / 账号 / 备注…">
+        <span id="stats" class="muted"></span>
+      </div>
+      <div id="grid"></div>
+    </div>
+
+    <section class="panel" id="sec-trend">
+      <div class="panel-head"><h2>📈 签到趋势</h2><span class="muted">近 14 天 · 今天的柱子是青色</span></div>
+      <canvas id="trend-chart" class="trend"></canvas>
+    </section>
+
+    <div class="duo" id="sec-data">
+      <section class="panel">
+        <div class="panel-head"><h2>🗓️ 签到热力图</h2><span class="muted">近 12 周 · 越亮越勤</span></div>
+        <div id="heatmap" class="heatmap"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>🏆 成就墙</h2><span id="ach-count" class="muted"></span></div>
+        <div id="ach-grid" class="ach-grid"></div>
+      </section>
+    </div>
+
+    <footer class="foot">
+      🗂️ 我的服务台 · 本地私有部署 · 数据仅存于本服务器<br>
+      <span class="kbd-hint">快捷键：/ 搜索 · N 新建服务 · C 一键全签 · 拖动卡片可排序</span>
+    </footer>
+  </main>
+</div>
+
+<!-- 登录 弹窗 -->
+<div id="login-overlay" class="modal-mask hidden">
+  <div class="modal narrow">
+    <h3>登录服务台</h3>
+    <form id="login-form" class="fgrid">
+      <label class="span2">用户名<input id="l-user" autocomplete="username" required></label>
+      <label class="span2">密码<input id="l-pass" type="password" autocomplete="current-password" required></label>
+      <div id="l-err" class="err span2 hidden"></div>
+      <div class="modal-acts span2">
+        <button id="login-cancel" class="btn ghost" type="button">取消</button>
+        <button class="btn primary" type="submit">登 录</button>
+      </div>
+    </form>
+    <p class="hint">忘了初始密码？看本地的「说明.md」或部署文档</p>
+  </div>
+</div>
+
+<!-- 添加/编辑 弹窗 -->
+<div id="overlay" class="modal-mask hidden">
+  <div class="modal">
+    <h3 id="modal-title">添加服务</h3>
+    <div class="fgrid">
+      <label>名称 *<input id="f-name" placeholder="如：XX中转站"></label>
+      <label>分类
+        <select id="f-category">
+          <option value="checkin">📅 每日签到</option>
+          <option value="relay">🔀 中转站 / API</option>
+          <option value="vps">🖥️ VPS / 服务器</option>
+          <option value="game">🎮 游戏</option>
+          <option value="domain">🌐 域名 / 订阅</option>
+          <option value="idle">🧟 已闲置</option>
+        </select>
+      </label>
+      <label class="span2">网址<input id="f-url" placeholder="https://…"></label>
+      <label>账号<input id="f-account"></label>
+      <label>密码 / 密钥 <i class="muted">(明文存本机)</i><input id="f-secret"></label>
+      <label>注册 / 购买日期<input id="f-registered" type="date"></label>
+      <label>到期日<input id="f-expires" type="date"></label>
+      <label>价格<input id="f-price" placeholder="如 $10/年"></label>
+      <label>签到频率
+        <select id="f-frequency">
+          <option value="none">不签到</option>
+          <option value="daily">每天</option>
+        </select>
+      </label>
+      <label class="span2">备注第一行会显示成卡片上的加粗介绍<textarea id="f-notes" rows="2"></textarea></label>
+    </div>
+    <div class="modal-acts">
+      <button id="modal-cancel" class="btn ghost">取消</button>
+      <button id="modal-save" class="btn primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 改密码 弹窗 -->
+<div id="pass-overlay" class="modal-mask hidden">
+  <div class="modal narrow">
+    <h3>修改登录密码</h3>
+    <div class="fgrid">
+      <label class="span2">旧密码<input id="p-old" type="password" autocomplete="current-password"></label>
+      <label class="span2">新密码（至少 6 位）<input id="p-new" type="password" autocomplete="new-password"></label>
+      <label class="span2">再输一遍<input id="p-new2" type="password" autocomplete="new-password"></label>
+    </div>
+    <div class="modal-acts">
+      <button id="pass-cancel" class="btn ghost">取消</button>
+      <button id="pass-save" class="btn primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>
